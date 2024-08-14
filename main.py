@@ -1,4 +1,5 @@
 import os
+import sys
 import streamlit as st
 from youtube_transcript_api import YouTubeTranscriptApi
 import urllib.parse as urlparse
@@ -6,6 +7,7 @@ import math
 import openai
 from requests.exceptions import Timeout
 import logging
+import tiktoken
 
 
 # Streamlit Secrets から API キーを取得
@@ -15,41 +17,56 @@ API_VERSION = st.secrets["OPENAI_API_VERSION"]
 MODEL_ID_40 = "gpt-4o-mini-2024-07-18"
 MODEL_ID_35 = "gpt-35-turbo-16k"
 
+# トークンカウントの関数
+def count_tokens(text):
+    encoding = tiktoken.encoding_for_model("gpt-4")
+    return len(encoding.encode(text))
+
+def chunk_text(text, max_tokens=15000):
+    chunks = []
+    current_chunk = ""
+    current_tokens = 0
+    
+    sentences = text.split(". ")
+    for sentence in sentences:
+        sentence_tokens = count_tokens(sentence)
+        if current_tokens + sentence_tokens > max_tokens:
+            chunks.append(current_chunk)
+            current_chunk = sentence
+            current_tokens = sentence_tokens
+        else:
+            current_chunk += sentence + ". "
+            current_tokens += sentence_tokens
+    
+    if current_chunk:
+        chunks.append(current_chunk)
+    
+    return chunks
 
 def get_caption(url, lang):
     video_id = urlparse.parse_qs(urlparse.urlparse(url).query)['v'][0]
     transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=[lang])
-    # 5分ごとのタイムスタンプを格納するリストを初期化
     timestamps = list(range(0, math.ceil(transcript[-1]['start']/300)*300, 300))
 
-    # 各部分のトランスクリプトをループで処理
     texts = []
     text = ""
     last_timestamp = 0
     for i, part in enumerate(transcript):
-        # 各部分の開始時間（タイムスタンプ）を分表記に変換
         minutes = math.floor(part['start'] / 60)
         seconds = int(part['start'] % 60)
 
-        # 5分ごとのタイムスタンプを表示
         if timestamps and part['start'] >= timestamps[0]:
             texts.append(f"\n{last_timestamp}分: {text}")
-            # print(f"\n{last_timestamp}分: {text}")
             text = ""
             last_timestamp = timestamps[0]//60
             timestamps.pop(0)
 
-        # 各部分のテキストをまとめる
         text += part['text'] + " "
 
-    # 最後のテキストを表示
     texts.append(f"\n{last_timestamp}分: {text}")
-    # print(f"\n{last_timestamp}分: {text}")
-    # return "".join(texts[1:])
-    return "".join(texts) # TODO
+    return "".join(texts)
 
 def revise_caption(text, arg_model_id):
-
     openai.api_type = "azure"
     openai.api_base = API_BASE_URL
     openai.api_version = API_VERSION
@@ -60,8 +77,8 @@ def revise_caption(text, arg_model_id):
         if not _user_prompt:
             return
         headers = {
-            'Ocp-Apim-Subscription-Key':API_KEY,
-            'Content-Type':'application/json',
+            'Ocp-Apim-Subscription-Key': API_KEY,
+            'Content-Type': 'application/json',
         }
         messages = [{'role':'system','content':_system_prompt},{'role':'user','content':_user_prompt}]
         try:
@@ -78,21 +95,47 @@ def revise_caption(text, arg_model_id):
         except Exception as e:
             return f"Error: {str(e)}"
 
-    user_prompt = f'''
-    以下の文章について、日本語で要約をだしてください。
-    また、誤字と脱字を修正して下さい。
-    ###文章###
-    {text}
-    '''
-    system_prompt = f'''
-    '''
-    res = send_prompt(user_prompt, system_prompt)
-    return res
+    chunks = chunk_text(text)
+    summaries = []
+    
+    for chunk in chunks:
+        user_prompt = f'''
+        以下の文章について、日本語で要約をだしてください。
+        また、誤字と脱字を修正して下さい。
+        ###文章###
+        {chunk}
+        '''
+        system_prompt = f'''
+        あなたは優秀な要約者です。与えられたテキストを簡潔に要約し、
+        重要なポイントを漏らさず伝えてください。
+        '''
+        summary = send_prompt(user_prompt, system_prompt)
+        summaries.append(summary)
+    
+    # 全てのチャンクの要約を結合
+    combined_summary = " ".join(summaries)
+    
+    # 結合した要約が長すぎる場合、再度要約
+    if count_tokens(combined_summary) > 15000:
+        final_user_prompt = f'''
+        以下の要約をさらに簡潔にまとめてください。
+        重要なポイントを漏らさないように注意してください。
+        ###要約###
+        {combined_summary}
+        '''
+        final_system_prompt = f'''
+        あなたは優秀な要約者です。与えられた要約をさらに簡潔にまとめ、
+        最も重要な情報を簡潔に伝えてください。
+        '''
+        final_summary = send_prompt(final_user_prompt, final_system_prompt)
+        return final_summary
+    else:
+        return combined_summary
+
 
 def main():
     try:
-        log_path = os.path.join(os.path.dirname(__file__), "logger.log")
-        logging.basicConfig(filename=log_path, filemode='w', level=logging.INFO, format="[%(levelname)s] %(message)s", datefmt="%m/%d/%Y %I:%M:%S %p")
+        logging.basicConfig(filename="logger.log", filemode='w', level=logging.INFO, format="[%(levelname)s] %(message)s", datefmt="%m/%d/%Y %I:%M:%S %p")
         logging.info("process start...")
         output_path = "./"
         url = ""
