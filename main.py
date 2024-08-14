@@ -18,7 +18,7 @@ except:
     API_BASE_URL = os.environ.get('OPENAI_API_BASE_URL')
     API_VERSION = os.environ.get('OPENAI_API_VERSION')
     
-MODEL_ID_40 = "gpt-4o-ptu"
+MODEL_ID_40 = "gpt-4o-mini-2024-07-18"
 MODEL_ID_35 = "gpt-35-turbo-16k"
 
 
