@@ -71,7 +71,7 @@ def revise_caption(text, arg_model_id):
     openai.api_base = API_BASE_URL
     openai.api_version = API_VERSION
     openai.api_key = API_KEY
-    model_id = MODEL_ID_40 if arg_model_id=="GPT4" else MODEL_ID_35
+    model_id = MODEL_ID_40
 
     def send_prompt(_user_prompt='', _system_prompt='', temperature=0):
         if not _user_prompt:
@@ -168,6 +168,7 @@ def main():
                 model_radio = st.radio("モデル",("GPT3.5", "GPT4"), horizontal=True, index=1)
                 send_button = st.button("実行")
         # レイアウト右
+        st.subheader(API_KEY)
         st.subheader(API_KEY)
 
         # 処理
