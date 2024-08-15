@@ -166,7 +166,11 @@ def main():
                 text_output = st.text_input("出力先のパス", value=output_path)
                 send_button = st.button("実行")
         # レイアウト右
-        st.subheader('キャプション取得') 
+        st.subheader(API_KEY) 
+        st.subheader(API_BASE_URL)
+        st.subheader(API_VERSION)
+
+        
 
         # 処理
         if send_button:
