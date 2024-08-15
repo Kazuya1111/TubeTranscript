@@ -90,10 +90,27 @@ def revise_caption(text, arg_model_id):
                 timeout=500
             )
             return response['choices'][0]['message']['content']
+        except openai.error.APIError as e:
+            logging.error(f"OpenAI API returned an API Error: {e}")
+            return f"OpenAI API Error: {e}"
+        except openai.error.AuthenticationError as e:
+            logging.error(f"OpenAI API returned an Authentication Error: {e}")
+            return f"Authentication Error: {e}"
+        except openai.error.APIConnectionError as e:
+            logging.error(f"Failed to connect to OpenAI API: {e}")
+            return f"API Connection Error: {e}"
+        except openai.error.InvalidRequestError as e:
+            logging.error(f"Invalid Request Error: {e}")
+            return f"Invalid Request: {e}"
+        except openai.error.RateLimitError as e:
+            logging.error(f"OpenAI API request exceeded rate limit: {e}")
+            return f"Rate Limit Exceeded: {e}"
         except Timeout:
+            logging.error("Request timed out")
             return "Timeout Error"
         except Exception as e:
-            return f"Error: {str(e)}"
+            logging.error(f"Unexpected error occurred: {e}")
+            return f"Unexpected Error: {e}"
 
     chunks = chunk_text(text)
     summaries = []
