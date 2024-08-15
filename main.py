@@ -7,7 +7,6 @@ import math
 import openai
 from requests.exceptions import Timeout
 import logging
-!pip install tiktoken
 import tiktoken
 
 
