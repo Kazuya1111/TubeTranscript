@@ -11,11 +11,9 @@ import tiktoken
 
 
 # Streamlit Secrets から API キーを取得
-'''
-API_KEY = st.secrets["OPENAI_API_KEY"]
-API_BASE_URL = st.secrets["OPENAI_API_BASE_URL"]
-API_VERSION = st.secrets["OPENAI_API_VERSION"]
-'''
+#API_KEY = st.secrets["OPENAI_API_KEY"]
+#API_BASE_URL = st.secrets["OPENAI_API_BASE_URL"]
+#API_VERSION = st.secrets["OPENAI_API_VERSION"]
 
 API_KEY = 'f96da8766da645479f4c4cd4f499b3cd'
 API_BASE_URL = "https://apim-daiwa-userapi-prod.azure-api.net"
