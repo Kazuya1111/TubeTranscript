@@ -163,12 +163,12 @@ def main():
             with st.container():
                 text_input = st.text_input("YouTubeのURL", value=url)
                 lang_radio = st.radio("言語",("ja", "en"), horizontal=True)
-                file_radio = st.radio("ファイル出力",("あり", "なし"), horizontal=True)
+                file_radio = st.radio("ファイル出力",("なし", "あり"), horizontal=True)
                 text_output = st.text_input("出力先のパス", value=output_path)
                 model_radio = st.radio("モデル",("GPT3.5", "GPT4"), horizontal=True, index=1)
                 send_button = st.button("実行")
         # レイアウト右
-        st.subheader("キャプション取得")
+        st.subheader(API_KEY)
 
         # 処理
         if send_button:
