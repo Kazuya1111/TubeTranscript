@@ -16,6 +16,7 @@ API_BASE_URL = st.secrets["OPENAI_API_BASE_URL"]
 API_VERSION = st.secrets["OPENAI_API_VERSION"]
 MODEL_ID_40 = "gpt-4o-mini-2024-07-18"
 MODEL_ID_35 = "gpt-35-turbo-16k"
+arg_model_id = "GPT4"
 
 # トークンカウントの関数
 def count_tokens(text):
