@@ -15,8 +15,6 @@ API_KEY = st.secrets["OPENAI_API_KEY"]
 API_BASE_URL = st.secrets["OPENAI_API_BASE_URL"]
 API_VERSION = st.secrets["OPENAI_API_VERSION"]
 MODEL_ID_40 = "gpt-4o-mini-2024-07-18"
-MODEL_ID_35 = "gpt-35-turbo-16k"
-arg_model_id = "GPT4"
 
 # トークンカウントの関数
 def count_tokens(text):
@@ -67,7 +65,7 @@ def get_caption(url, lang):
     texts.append(f"\n{last_timestamp}分: {text}")
     return "".join(texts)
 
-def revise_caption(text, arg_model_id):
+def revise_caption(text):
     openai.api_type = "azure"
     openai.api_base = API_BASE_URL
     openai.api_version = API_VERSION
@@ -177,7 +175,7 @@ def main():
                 exp_1 = st.expander("オリジナル", expanded=False)
                 exp_1.write(caption)                
 
-                rev_caption = revise_caption(caption, arg_model_id)
+                rev_caption = revise_caption(caption)
                 exp_2 = st.expander("要約", expanded=True)
                 exp_2.write(rev_caption)
                 
