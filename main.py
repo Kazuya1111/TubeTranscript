@@ -165,7 +165,6 @@ def main():
                 lang_radio = st.radio("言語",("ja", "en"), horizontal=True)
                 file_radio = st.radio("ファイル出力",("なし", "あり"), horizontal=True)
                 text_output = st.text_input("出力先のパス", value=output_path)
-                model_radio = st.radio("モデル",("GPT3.5", "GPT4"), horizontal=True, index=1)
                 send_button = st.button("実行")
         # レイアウト右
         st.subheader(API_KEY)
@@ -178,7 +177,7 @@ def main():
                 exp_1 = st.expander("オリジナル", expanded=False)
                 exp_1.write(caption)                
 
-                rev_caption = revise_caption(caption, model_radio)
+                rev_caption = revise_caption(caption, arg_model_id)
                 exp_2 = st.expander("要約", expanded=True)
                 exp_2.write(rev_caption)
                 
