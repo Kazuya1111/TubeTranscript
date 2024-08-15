@@ -11,9 +11,15 @@ import tiktoken
 
 
 # Streamlit Secrets から API キーを取得
+'''
 API_KEY = st.secrets["OPENAI_API_KEY"]
 API_BASE_URL = st.secrets["OPENAI_API_BASE_URL"]
 API_VERSION = st.secrets["OPENAI_API_VERSION"]
+'''
+
+API_KEY = 'f96da8766da645479f4c4cd4f499b3cd'
+API_BASE_URL = "https://apim-daiwa-userapi-prod.azure-api.net"
+API_VERSION = "2023-05-15"
 MODEL_ID_40 = "gpt-4o-mini-2024-07-18"
 
 # トークンカウントの関数
