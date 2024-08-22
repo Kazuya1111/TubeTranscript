@@ -7,40 +7,34 @@ import math
 import openai
 from requests.exceptions import Timeout
 import logging
-import tiktoken
 
-
-# Streamlit Secrets から API キーを取得
-API_KEY = st.secrets["OPENAI_API_KEY"]
-API_BASE_URL = st.secrets["OPENAI_API_BASE_URL"]
-API_VERSION = st.secrets["OPENAI_API_VERSION"]
+#API キーを取得
+API_KEY = 'f96da8766da645479f4c4cd4f499b3cd'
+API_BASE_URL = 'https://apim-daiwa-userapi-prod.azure-api.net'
+API_VERSION = '2023-05-15'
 MODEL_ID_40 = "gpt-4o-mini-2024-07-18"
 
-# トークンカウントの関数
+# 簡易的なトークンカウントの関数（文字数ベース）
 def count_tokens(text):
-    encoding = tiktoken.encoding_for_model("gpt-4")
-    return len(encoding.encode(text))
+    return len(text)
 
-def chunk_text(text, max_tokens=15000):
+def chunk_text(text, max_chars=60000):  # およそ15000トークンに相当する文字数
     chunks = []
     current_chunk = ""
-    current_tokens = 0
     
     sentences = text.split(". ")
     for sentence in sentences:
-        sentence_tokens = count_tokens(sentence)
-        if current_tokens + sentence_tokens > max_tokens:
+        if len(current_chunk) + len(sentence) > max_chars:
             chunks.append(current_chunk)
-            current_chunk = sentence
-            current_tokens = sentence_tokens
+            current_chunk = sentence + ". "
         else:
             current_chunk += sentence + ". "
-            current_tokens += sentence_tokens
     
     if current_chunk:
         chunks.append(current_chunk)
     
     return chunks
+
 
 def get_caption(url, lang):
     video_id = urlparse.parse_qs(urlparse.urlparse(url).query)['v'][0]
@@ -66,42 +60,38 @@ def get_caption(url, lang):
     return "".join(texts)
 
 def revise_caption(text):
-    openai.api_type = "azure"
-    openai.api_base = API_BASE_URL
-    openai.api_version = API_VERSION
-    openai.api_key = API_KEY
-    model_id = MODEL_ID_40
+    client = openai.AzureOpenAI(
+        api_key=API_KEY,
+        api_version=API_VERSION,
+        azure_endpoint=API_BASE_URL
+    )
 
     def send_prompt(_user_prompt='', _system_prompt='', temperature=0):
         if not _user_prompt:
             return
-        headers = {
-            'Ocp-Apim-Subscription-Key': API_KEY,
-            'Content-Type': 'application/json',
-        }
-        messages = [{'role':'system','content':_system_prompt},{'role':'user','content':_user_prompt}]
         try:
-            response = openai.ChatCompletion.create(
-                engine=model_id,
-                messages = messages,
-                headers = headers,
-                temperature=temperature,
-                timeout=500
+            response = client.chat.completions.create(
+                model=MODEL_ID_40,
+                messages=[
+                    {"role": "system", "content": _system_prompt},
+                    {"role": "user", "content": _user_prompt}
+                ],
+                temperature=temperature
             )
-            return response['choices'][0]['message']['content']
-        except openai.error.APIError as e:
+            return response.choices[0].message.content
+        except openai.APIError as e:
             logging.error(f"OpenAI API returned an API Error: {e}")
             return f"OpenAI API Error: {e}"
-        except openai.error.AuthenticationError as e:
+        except openai.AuthenticationError as e:
             logging.error(f"OpenAI API returned an Authentication Error: {e}")
             return f"Authentication Error: {e}"
-        except openai.error.APIConnectionError as e:
+        except openai.APIConnectionError as e:
             logging.error(f"Failed to connect to OpenAI API: {e}")
             return f"API Connection Error: {e}"
-        except openai.error.InvalidRequestError as e:
+        except openai.InvalidRequestError as e:
             logging.error(f"Invalid Request Error: {e}")
             return f"Invalid Request: {e}"
-        except openai.error.RateLimitError as e:
+        except openai.RateLimitError as e:
             logging.error(f"OpenAI API request exceeded rate limit: {e}")
             return f"Rate Limit Exceeded: {e}"
         except Timeout:
@@ -116,14 +106,14 @@ def revise_caption(text):
     
     for chunk in chunks:
         user_prompt = f'''
-        以下の文章について、日本語で要約をだしてください。
-        また、誤字と脱字を修正して下さい。
+        以下の文章について、誤字と脱字を修正し、なるべく内容を削らない形でまとめてください。
+        
         ###文章###
         {chunk}
         '''
         system_prompt = f'''
-        あなたは優秀な要約者です。与えられたテキストを簡潔に要約し、
-        重要なポイントを漏らさず伝えてください。
+        あなたは優秀なスタッフです。与えられたテキストについて、
+        ポイントを漏らさず伝えてください。
         '''
         summary = send_prompt(user_prompt, system_prompt)
         summaries.append(summary)
@@ -132,9 +122,9 @@ def revise_caption(text):
     combined_summary = " ".join(summaries)
     
     # 結合した要約が長すぎる場合、再度要約
-    if count_tokens(combined_summary) > 15000:
+    if count_tokens(combined_summary) > 50000:
         final_user_prompt = f'''
-        以下の要約をさらに簡潔にまとめてください。
+        以下を簡潔にまとめてください。
         重要なポイントを漏らさないように注意してください。
         ###要約###
         {combined_summary}
@@ -162,8 +152,6 @@ def main():
             with st.container():
                 text_input = st.text_input("YouTubeのURL", value=url)
                 lang_radio = st.radio("言語",("ja", "en"), horizontal=True)
-                file_radio = st.radio("ファイル出力",("なし", "あり"), horizontal=True)
-                text_output = st.text_input("出力先のパス", value=output_path)
                 send_button = st.button("実行")
         # レイアウト右
         st.subheader('キャプション取得')        
@@ -172,18 +160,13 @@ def main():
         if send_button:
             with st.spinner("処理中..."):
                 caption = get_caption(text_input, lang_radio)
-                exp_1 = st.expander("オリジナル", expanded=False)
+                exp_1 = st.expander("オリジナル（クリックで開閉）", expanded=False)
                 exp_1.write(caption)                
 
                 rev_caption = revise_caption(caption)
                 exp_2 = st.expander("修正版", expanded=True)
-                exp_2.write(revise_caption(rev_caption))
+                exp_2.write(revise_caption(rev_caption))                
                 
-                if file_radio == "あり":
-                    output_file = os.path.join(text_output, "caption.txt")
-                    with open(output_file, 'w', encoding='utf-8') as f:
-                        f.write(rev_caption)
-                    st.success(f"ファイルを保存しました: {output_file}")
 
     except Exception as e:
         logging.error(f"エラーが発生しました: {str(e)}")
