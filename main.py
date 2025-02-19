@@ -9,10 +9,10 @@ from requests.exceptions import Timeout
 import logging
 
 #API キーを取得
-API_KEY = 'f96da8766da645479f4c4cd4f499b3cd'
+API_KEY = 'cd0cabd67b414d25b0eac6fd9b7b318c'
 API_BASE_URL = 'https://apim-daiwa-userapi-prod.azure-api.net'
 API_VERSION = '2023-05-15'
-MODEL_ID_40 = "gpt-4o-mini-2024-07-18"
+MODEL_ID_40 = "o1-mini"
 
 # 簡易的なトークンカウントの関数（文字数ベース）
 def count_tokens(text):
@@ -106,7 +106,7 @@ def revise_caption(text):
     
     for chunk in chunks:
         user_prompt = f'''
-        以下の文章について、誤字と脱字を修正し、なるべく内容を削らない形でまとめてください。
+        以下はYoutubeから取得した文字起こしのテキストです。文章について、文脈に合わせて誤字と脱字を修正してください。また、内容に絶対に漏れがないよう注意してください。
         
         ###文章###
         {chunk}
