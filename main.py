@@ -12,7 +12,7 @@ import logging
 API_KEY = 'cd0cabd67b414d25b0eac6fd9b7b318c'
 API_BASE_URL = 'https://apim-daiwa-userapi-prod.azure-api.net'
 API_VERSION = '2023-05-15'
-MODEL_ID_40 = "o1-mini"
+MODEL_ID_40 = "gpt-4o-2024-05-13"
 
 # 簡易的なトークンカウントの関数（文字数ベース）
 def count_tokens(text):
