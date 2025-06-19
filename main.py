@@ -11,8 +11,8 @@ import logging
 #API キーを取得
 API_KEY = 'cd0cabd67b414d25b0eac6fd9b7b318c'
 API_BASE_URL = 'https://apim-daiwa-userapi-prod.azure-api.net'
-API_VERSION = '2023-05-15'
-MODEL_ID_40 = "gpt-4o-2024-05-13"
+API_VERSION = '2024-10-21'
+MODEL_ID_40 = "gpt-4o-mini-2024-07-18"
 
 # 簡易的なトークンカウントの関数（文字数ベース）
 def count_tokens(text):
@@ -112,7 +112,7 @@ def revise_caption(text):
         {chunk}
         '''
         system_prompt = f'''
-        あなたは優秀なスタッフです。与えられたテキストについて、
+        あなたは優秀な金融市場のスタッフです。与えられたテキストについて、
         ポイントを漏らさず伝えてください。
         '''
         summary = send_prompt(user_prompt, system_prompt)
@@ -154,7 +154,7 @@ def main():
                 lang_radio = st.radio("言語",("ja", "en"), horizontal=True)
                 send_button = st.button("実行")
         # レイアウト右
-        st.subheader('キャプション取得')        
+        st.subheader('YOUTUBEキャプション取得')        
 
         # 処理
         if send_button:
